@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * @file
+ * The Zendesk module helps you to remote authenticate your users 
+ * using Drupal 
+ *
+ * authors: 
+ * Tom Deryckere (Tom.Deryckere@gmail.com
+ */ 
+
+/**
+ * Implementation of hook_menu()
+ */  
+function zendesk_menu() {
+  $items['services/zendesk'] = array(
+		'title' => 'Zendesk remote authentication',
+		'page callback' => 'zendesk_remote_authentication',
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK_ITEM,
+	);
+	
+	$items['admin/settings/zendesk'] = array(
+		'title' => 'Zendesk settings', 
+		'access arguments' => array('configure osmobiclient'),
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('zendesk_configuration_form'),
+		'type' => MENU_NORMAL_ITEM,
+		'description' => t('Zendesk settings')
+	);
+  return $items;
+}
+
+/**
+ * Remote authentication script (see: http://www.zendesk.com/api/remote_authentication)
+ */ 
+function zendesk_remote_authentication() {
+  global $user;
+  // check if anonymous, if so redirect to login with destination the path where he comes from
+  if ( $user->uid) {
+    // logged in
+    $url = '';
+    $hash = MD5($user->name . $user->mail . $user->uid . variable_get('zendesk_secret_key', '') . $_GET['timestamp']);
+    $query = 'name=' . $user->name .'&email=' . $user->mail . '&timestamp=' . $_GET['timestamp'] . '&hash=' . $hash . '&external_id=' . $user->uid;
+    drupal_goto(variable_get('zendesk_url', '') . '/access/remote', $query);
+  } else {
+    // not logged in
+    drupal_goto('/user', 'destination=' . variable_get('zendesk_url', ''));
+  }
+   // if not anonymouse redirect
+}
+
+/**
+ * Zendesk configuration form
+ */ 
+function zendesk_configuration_form() {
+  $form['zendesk']['zendesk_url'] =  array (
+    '#type' => 'textfield',
+    '#description' => 'Give the url of your zendesk support page (e.g. http://yourdomain.zendesk.com'),
+    '#default_value' => variable_get('zendesk_url', 'http://yourdomain.zendesk.com'),
+  );
+  $form['zendesk']['zendesk_secret_key'] = array (
+    '#type' => 'textfield',
+    '#description' => 'insert the zendeskt secret key',
+    '#default_value' => variable_get('zendesk_secret_key', 'insert key'),
+  );
+  return system_settings_form($form);
+}
