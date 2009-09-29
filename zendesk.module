@@ -41,13 +41,11 @@ function zendesk_remote_authentication() {
     // logged in
     $url = '';
     $hash = MD5($user->name . $user->mail . $user->uid . variable_get('zendesk_secret_key', '') . $_GET['timestamp']);
-    $query = 'name=' . $user->name .'&email=' . $user->mail . '&timestamp=' . $_GET['timestamp'] . '&hash=' . $hash . '&external_id=' . $user->uid;
-    drupal_goto(variable_get('zendesk_url', '') . '/access/remote', $query);
+    $query = 'name=' . $user->name .'&email=' . $user->mail . '&timestamp=' . $_GET['timestamp'] . '&hash=' . $hash . '&external_id=' . $user->uid;    drupal_goto(variable_get('zendesk_url', '') . '/access/remote', $query);
   } else {
     // not logged in
     drupal_goto('/user', 'destination=' . variable_get('zendesk_url', ''));
-  }
-   // if not anonymouse redirect
+  }   // if not anonymouse redirect
 }
 
 /**
@@ -56,7 +54,7 @@ function zendesk_remote_authentication() {
 function zendesk_configuration_form() {
   $form['zendesk']['zendesk_url'] =  array (
     '#type' => 'textfield',
-    '#description' => 'Give the url of your zendesk support page (e.g. http://yourdomain.zendesk.com'),
+    '#description' => 'Give the url of your zendesk support page (e.g. http://yourdomain.zendesk.com)',
     '#default_value' => variable_get('zendesk_url', 'http://yourdomain.zendesk.com'),
   );
   $form['zendesk']['zendesk_secret_key'] = array (
