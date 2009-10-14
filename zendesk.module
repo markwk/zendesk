@@ -25,7 +25,6 @@ function zendesk_menu() {
 		'access callback' => TRUE,
 		'type' => MENU_CALLBACK_ITEM,
 	);
-	
 	$items['admin/settings/zendesk'] = array(
 		'title' => 'Zendesk settings', 
 		'access arguments' => array('configure zendesk'),
@@ -44,16 +43,33 @@ function zendesk_remote_authentication() {
   global $user;
   // check if anonymous, if so redirect to login with destination the path where he comes from
   if ( $user->uid) {
-    // logged in
-    $url = '';
-    $hash = MD5($user->name . $user->mail . $user->uid . variable_get('zendesk_secret_key', '') . $_GET['timestamp']);
-    $query = 'name=' . $user->name .'&email=' . $user->mail . '&timestamp=' . $_GET['timestamp'] . '&hash=' . $hash . '&external_id=' . $user->uid;    drupal_goto(variable_get('zendesk_url', '') . '/access/remote', $query);
+    //check if user role is allowed to be authenticated
+    $zendesk_roles = variable_get('zendesk_roles', array());
+    if (!array_sum($zendesk_roles)) { // no roles are set, give access
+      zendesk_authenticate_user();
+    } else {
+      $keys = array_keys($user->roles);
+      foreach ($keys as $key) {
+        if ($zendesk_roles[$key] > 0) {
+          zendesk_authenticate_user();
+        }
+      }
+    }
+    drupal_goto(variable_get('zendesk_no_permission_page', ''));
   } else {
     // not logged in
     drupal_goto('/user', 'destination=' . variable_get('zendesk_url', ''));
   }   // if not anonymouse redirect
 }
 
+function zendesk_authenticate_user() {
+  global $user;
+  $url = '';
+  $hash = MD5($user->name . $user->mail . $user->uid . variable_get('zendesk_secret_key', '') . $_GET['timestamp']);
+  $query = 'name=' . $user->name .'&email=' . $user->mail . '&timestamp=' . $_GET['timestamp'] . '&hash=' . $hash . '&external_id=' . $user->uid;    
+  drupal_set_message($query);
+  //drupal_goto(variable_get('zendesk_url', '') . '/access/remote', $query);
+}
 /**
  * Zendesk configuration form
  */ 
@@ -67,6 +83,30 @@ function zendesk_configuration_form() {
     '#type' => 'textfield',
     '#description' => 'insert the zendeskt secret key',
     '#default_value' => variable_get('zendesk_secret_key', 'insert key'),
+  );
+  
+    // Role-based visibility settings
+  $result = db_query('SELECT rid, name FROM {role} WHERE rid != 1 ORDER BY name');
+  $role_options = array();
+  while ($role = db_fetch_object($result)) {
+    $role_options[$role->rid] = $role->name;
+  }
+  $form['zendesk']['zendesk_permissions'] = array(
+    '#type' => 'fieldset',
+    '#description' => t('Restrict access to zendesk based on user roles'),
+  );
+  $form['zendesk']['zendesk_permissions']['zendesk_roles'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Authenticate only for specific roles'),
+    '#default_value' => variable_get('zendesk_roles', ''),
+    '#options' => $role_options,
+    '#description' => t('Select which roles may be authenticated for zendesk. If you select no roles, all autenticated drupal users will be authenticated for Zendesk.'),
+  );
+  $form['zendesk']['zendesk_permissions']['zendesk_no_permission_page'] = array(
+    '#type' => 'textfield',
+    '#title' => t('No permission page'),
+    '#default_value' => variable_get('zendesk_no_permission_page', ''),
+    '#description' => t('To what pages do you want to redirect user that have no permission to access Zendesk.'),
   );
   return system_settings_form($form);
 }
