@@ -67,8 +67,7 @@ function zendesk_authenticate_user() {
   $url = '';
   $hash = MD5($user->name . $user->mail . $user->uid . variable_get('zendesk_secret_key', '') . $_GET['timestamp']);
   $query = 'name=' . $user->name .'&email=' . $user->mail . '&timestamp=' . $_GET['timestamp'] . '&hash=' . $hash . '&external_id=' . $user->uid;    
-  drupal_set_message($query);
-  //drupal_goto(variable_get('zendesk_url', '') . '/access/remote', $query);
+  drupal_goto(variable_get('zendesk_url', '') . '/access/remote', $query);
 }
 /**
  * Zendesk configuration form
