@@ -2,5 +2,3 @@
 name = Zendesk remote authentication
 description = "This module enables remote authentication with zendesk"
 core = 6.x
-
-  

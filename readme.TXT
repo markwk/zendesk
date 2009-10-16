@@ -1,3 +1,4 @@
+$id
 README
 ======
 The zendesk module allows you to integrate your drupal site with the zendesk 
@@ -14,5 +15,3 @@ Installation is easy:
   * optionally you can insert your logout url: http://yoursite.com/logout    
 - go to admin/settings/zendesk and fill in the url of your zendesk support page
 together with the secret key
-
-Tom
