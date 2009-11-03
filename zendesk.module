@@ -26,6 +26,13 @@ function zendesk_menu() {
 		'access callback' => TRUE,
 		'type' => MENU_CALLBACK_ITEM,
 	);
+	
+	$item['redirect/zendesk'] = array(
+  	'title' => 'Zendesk redirection',
+		'page callback' => 'zendesk_redirect',
+		'access callback' => TRUE,
+			'type' => MENU_CALLBACK_ITEM,
+  );
 	$items['admin/settings/zendesk'] = array(
 		'title' => 'Zendesk settings', 
 		'access arguments' => array('configure zendesk'),
@@ -54,7 +61,7 @@ function zendesk_remote_authentication() {
   } 
   else {
     // not logged in
-    drupal_goto('/user', 'destination=' . variable_get('zendesk_url', ''));
+    drupal_goto('/user', 'destination=zendesk/redirect');
   }  
 }
 
@@ -72,15 +79,21 @@ function zendesk_authenticate_user() {
  * Zendesk configuration form
  */ 
 function zendesk_configuration_form() {
-  $form['zendesk']['zendesk_url'] =  array (
+ $form['zendesk']['zendesk_conf'] = array(
+  '#type' => 'fieldset',
+  '#title' => 'general configuration'
+ 
+ );
+  $form['zendesk']['zendesk_conf']['zendesk_url'] =  array (
     '#type' => 'textfield',
     '#description' => 'Give the url of your zendesk support page (e.g. http://yourdomain.zendesk.com)',
     '#default_value' => variable_get('zendesk_url', 'http://yourdomain.zendesk.com'),
   );
-  $form['zendesk']['zendesk_secret_key'] = array (
+  $form['zendesk']['zendesk_conf']['zendesk_secret_key'] = array (
     '#type' => 'textfield',
     '#description' => 'insert the zendesk secret key',
     '#default_value' => variable_get('zendesk_secret_key', 'insert key'),
+    '#suffix' => t('Use the http://www.yourdomain.com/services/zendesk page in your zendesk configuration page.')
   );
   
   $form['zendesk']['zendesk_api'] = array(
@@ -129,7 +142,7 @@ function zendesk_configuration_form() {
     '#title' => t('Authenticate only for specific roles'),
     '#default_value' => variable_get('zendesk_roles', ''),
     '#options' => $role_options,
-    '#description' => t('Select which roles may be authenticated for zendesk. If you select no roles, all autenticated drupal users will be authenticated for Zendesk.'),
+    '#description' => t('Select which roles may be authenticated for zendesk. If you select no roles, all authenticated drupal users will be authenticated for Zendesk.'),
   );
   $form['zendesk']['zendesk_permissions']['zendesk_no_permission_page'] = array(
     '#type' => 'textfield',
@@ -234,4 +247,11 @@ function zendesk_initialize_library() {
   require_once 'lib/Zendesk.lib.php';
   $zd = new Zendesk(variable_get('zendesk_api_group', ''), variable_get('zendesk_api_mail', ''), variable_get('zendesk_api_pass', ''), FALSE);
   return $zd;
+}
+
+/**
+ * Zendesk redirect
+ */
+function zendesk_redirect() {
+  drupal_goto(variable_get('zendesk_url', ''));
 }
