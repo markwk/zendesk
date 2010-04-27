@@ -13,7 +13,7 @@
  * Implementation of hook_perm().
  */
 function zendesk_perm() {
-	return array('configure zendesk');
+  return array('configure zendesk');
 }
 /**
  * Implementation of hook_menu()
@@ -21,26 +21,26 @@ function zendesk_perm() {
 function zendesk_menu() {
   // callback use by zendesk for remote authentication
   $items['services/zendesk'] = array(
-		'title' => 'Zendesk remote authentication',
-		'page callback' => 'zendesk_remote_authentication',
-		'access callback' => TRUE,
-		'type' => MENU_CALLBACK_ITEM,
-	);
-	
-	$item['zendesk/redirect'] = array(
-  	'title' => 'Zendesk redirection',
-		'page callback' => 'zendesk_redirect',
-		'access callback' => TRUE,
-			'type' => MENU_CALLBACK_ITEM,
+    'title' => 'Zendesk remote authentication',
+    'page callback' => 'zendesk_remote_authentication',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK_ITEM,
   );
-	$items['admin/settings/zendesk'] = array(
-		'title' => 'Zendesk settings', 
-		'access arguments' => array('configure zendesk'),
-		'page callback' => 'drupal_get_form',
+
+  $item['zendesk/redirect'] = array(
+    'title' => 'Zendesk redirection',
+    'page callback' => 'zendesk_redirect',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK_ITEM,
+  );
+  $items['admin/settings/zendesk'] = array(
+    'title' => 'Zendesk settings',
+    'access arguments' => array('configure zendesk'),
+    'page callback' => 'drupal_get_form',
     'page arguments' => array('zendesk_configuration_form'),
-		'type' => MENU_NORMAL_ITEM,
-		'description' => t('Zendesk settings')
-	);
+    'type' => MENU_NORMAL_ITEM,
+    'description' => t('Zendesk settings')
+  );
   return $items;
 }
 
@@ -61,7 +61,7 @@ function zendesk_remote_authentication() {
   } 
   else {
     // not logged in
-    drupal_goto('user', 'destination=redirect/zendesk');
+    drupal_goto('user', 'destination=zendesk/redirect');
   }  
 }
 
