@@ -27,7 +27,7 @@ function zendesk_menu() {
 		'type' => MENU_CALLBACK_ITEM,
 	);
 	
-	$item['redirect/zendesk'] = array(
+	$item['zendesk/redirect'] = array(
   	'title' => 'Zendesk redirection',
 		'page callback' => 'zendesk_redirect',
 		'access callback' => TRUE,
@@ -61,7 +61,7 @@ function zendesk_remote_authentication() {
   } 
   else {
     // not logged in
-    drupal_goto('/user', 'destination=zendesk/redirect');
+    drupal_goto('user', 'destination=redirect/zendesk');
   }  
 }
 
