@@ -140,7 +140,7 @@ function zendesk_configuration_form() {
   $form['zendesk']['zendesk_permissions']['zendesk_roles'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Authenticate only for specific roles'),
-    '#default_value' => variable_get('zendesk_roles', ''),
+    '#default_value' => variable_get('zendesk_roles', array()),
     '#options' => $role_options,
     '#description' => t('Select which roles may be authenticated for zendesk. If you select no roles, all authenticated drupal users will be authenticated for Zendesk.'),
   );
