@@ -13,26 +13,34 @@
  * Implementation of hook_perm().
  */
 function zendesk_perm() {
-	return array('configure zendesk');
+  return array('configure zendesk');
 }
 /**
  * Implementation of hook_menu()
  */  
 function zendesk_menu() {
+  // callback use by zendesk for remote authentication
   $items['services/zendesk'] = array(
-		'title' => 'Zendesk remote authentication',
-		'page callback' => 'zendesk_remote_authentication',
-		'access callback' => TRUE,
-		'type' => MENU_CALLBACK_ITEM,
-	);
-	$items['admin/settings/zendesk'] = array(
-		'title' => 'Zendesk settings', 
-		'access arguments' => array('configure zendesk'),
-		'page callback' => 'drupal_get_form',
+    'title' => 'Zendesk remote authentication',
+    'page callback' => 'zendesk_remote_authentication',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK_ITEM,
+  );
+
+  $item['zendesk/redirect'] = array(
+    'title' => 'Zendesk redirection',
+    'page callback' => 'zendesk_redirect',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK_ITEM,
+  );
+  $items['admin/settings/zendesk'] = array(
+    'title' => 'Zendesk settings',
+    'access arguments' => array('configure zendesk'),
+    'page callback' => 'drupal_get_form',
     'page arguments' => array('zendesk_configuration_form'),
-		'type' => MENU_NORMAL_ITEM,
-		'description' => t('Zendesk settings')
-	);
+    'type' => MENU_NORMAL_ITEM,
+    'description' => t('Zendesk settings')
+  );
   return $items;
 }
 
@@ -44,24 +52,22 @@ function zendesk_remote_authentication() {
   // check if anonymous, if so redirect to login with destination the path where he comes from
   if ( $user->uid) {
     //check if user role is allowed to be authenticated
-    $zendesk_roles = variable_get('zendesk_roles', array());
-    if (!array_sum($zendesk_roles)) { // no roles are set, give access
+    if (zendesk_user_has_access($user)) {
       zendesk_authenticate_user();
-    } else {
-      $keys = array_keys($user->roles);
-      foreach ($keys as $key) {
-        if ($zendesk_roles[$key] > 0) {
-          zendesk_authenticate_user();
-        }
-      }
+    } 
+    else {
+      drupal_goto(variable_get('zendesk_no_permission_page', ''));
     }
-    drupal_goto(variable_get('zendesk_no_permission_page', ''));
-  } else {
+  } 
+  else {
     // not logged in
-    drupal_goto('/user', 'destination=' . variable_get('zendesk_url', ''));
-  }   // if not anonymouse redirect
+    drupal_goto('user', 'destination=zendesk/redirect');
+  }  
 }
 
+/**
+ * Authentication of the user
+ */ 
 function zendesk_authenticate_user() {
   global $user;
   $url = '';
@@ -73,17 +79,54 @@ function zendesk_authenticate_user() {
  * Zendesk configuration form
  */ 
 function zendesk_configuration_form() {
-  $form['zendesk']['zendesk_url'] =  array (
+ $form['zendesk']['zendesk_conf'] = array(
+  '#type' => 'fieldset',
+  '#title' => 'general configuration'
+ 
+ );
+  $form['zendesk']['zendesk_conf']['zendesk_url'] =  array (
     '#type' => 'textfield',
     '#description' => 'Give the url of your zendesk support page (e.g. http://yourdomain.zendesk.com)',
     '#default_value' => variable_get('zendesk_url', 'http://yourdomain.zendesk.com'),
   );
-  $form['zendesk']['zendesk_secret_key'] = array (
+  $form['zendesk']['zendesk_conf']['zendesk_secret_key'] = array (
     '#type' => 'textfield',
-    '#description' => 'insert the zendeskt secret key',
+    '#description' => 'insert the zendesk secret key',
     '#default_value' => variable_get('zendesk_secret_key', 'insert key'),
+    '#suffix' => t('Use the http://www.yourdomain.com/services/zendesk page in your zendesk configuration page.')
   );
   
+  $form['zendesk']['zendesk_api'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Zendesk API configuration',
+    '#description' => t('Give the credentials of the administrator in order to use api calls. 
+    These api calls will be used to synchronize users'),
+  );
+  
+  $form['zendesk']['zendesk_api']['zendesk_api_enable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Synchronize the Drupal users with Zendesk'),
+    '#description' => t('When accounts are created, updated and delete, push these changes to Zendesk'),
+  );
+      
+  $form['zendesk']['zendesk_api']['zendesk_api_group'] = array(
+    '#type' => 'textfield',
+    '#title' => t('API group'),
+    '#default_value' => variable_get('zendesk_api_group', ''),
+    '#description' => t('this is simple the subdomain of your zendesk page: if your zendesk is http://subdomain.zendesk.com, then you have to fil in "subdomain"'),
+  );
+  
+  $form['zendesk']['zendesk_api']['zendesk_api_mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('mail address of the API user '),
+    '#default_value' => variable_get('zendesk_api_mail', ''),
+  );
+  
+  $form['zendesk']['zendesk_api']['zendesk_api_pass'] = array(
+    '#type' => 'textfield',
+    '#title' => t('API password'),
+    '#default_value' => variable_get('zendesk_api_pass', '')
+  );
     // Role-based visibility settings
   $result = db_query('SELECT rid, name FROM {role} WHERE rid != 1 ORDER BY name');
   $role_options = array();
@@ -92,14 +135,14 @@ function zendesk_configuration_form() {
   }
   $form['zendesk']['zendesk_permissions'] = array(
     '#type' => 'fieldset',
-    '#description' => t('Restrict access to zendesk based on user roles'),
+    '#description' => t('Restrict access to zendesk based on user roles. These rules will apply for both user synchronization as remote authentication.'),
   );
   $form['zendesk']['zendesk_permissions']['zendesk_roles'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Authenticate only for specific roles'),
-    '#default_value' => variable_get('zendesk_roles', ''),
+    '#default_value' => variable_get('zendesk_roles', array()),
     '#options' => $role_options,
-    '#description' => t('Select which roles may be authenticated for zendesk. If you select no roles, all autenticated drupal users will be authenticated for Zendesk.'),
+    '#description' => t('Select which roles may be authenticated for zendesk. If you select no roles, all authenticated drupal users will be authenticated for Zendesk.'),
   );
   $form['zendesk']['zendesk_permissions']['zendesk_no_permission_page'] = array(
     '#type' => 'textfield',
@@ -107,5 +150,108 @@ function zendesk_configuration_form() {
     '#default_value' => variable_get('zendesk_no_permission_page', ''),
     '#description' => t('To what pages do you want to redirect user that have no permission to access Zendesk.'),
   );
+  
   return system_settings_form($form);
+}
+
+/***
+ * Check if the user may be be authenticated or synced with zendesk
+ */ 
+function zendesk_user_has_access($user) {
+  $zendesk_roles = variable_get('zendesk_roles', array());
+  if (!array_sum($zendesk_roles)) { // no roles are set, give access
+    return TRUE;
+  } 
+  else {
+    $keys = array_keys($user->roles);
+    foreach ($keys as $key) {
+      if ($zendesk_roles[$key] > 0) {
+        return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_user
+ */  
+function zendesk_user($op, &$edit, &$account, $category = NULL) {
+  switch ($op) {
+    case 'insert':
+      $zd = zendesk_initialize_library();
+      $result = $zd->create(ZENDESK_USERS, array(
+        'details' => array(
+            'email' => $account->mail,
+            'name' => $account->name,
+            'external-id' => $account->uid,
+          ), 
+      ));
+      if (!$result) {
+        watchdog('zendesk', 'error code: ' . $zd->result['code'], WATCHDOG_ERROR);
+      }
+      else {
+        $query = "INSERT INTO {zendesk_users} (uid, zid) VALUES (%d, %d)";
+        db_query($query, $account->uid, $result);
+      }
+      break;
+    case 'update':
+      $zd = zendesk_initialize_library();
+      $zendesk_id = zendesk_get_user($account->uid);
+      $result = $zd->update(ZENDESK_USERS, array(
+        'id' => $zendesk_id,
+        'details' => array(
+              'email' => $account->mail,
+              'name' => $account->name,
+              'external-id' => $account->uid,
+            ),
+          )
+        );
+      if (!result){
+        watchdog('zendesk', 'error: ' . $zd->result['code'], WATCHDOG_ERROR);
+      } 
+      break;
+    case 'delete':
+      $zd = zendesk_initialize_library();
+      $zendesk_id = zendesk_get_user($account->uid);
+      $result = $zd->delete(ZENDESK_USERS, array('id' => $zendesk_id));
+      if (!result){
+        watchdog('zendesk', 'error: ' . $zd->result['code'], WATCHDOG_ERROR);
+      } 
+      else {
+        $query = "DELETE FROM {zendesk_users} WHERE uid = %d";
+        db_query($query, $account->uid);
+      }
+      break;
+  }
+}
+
+/**
+ * Helper function to retrieve zendesk id of the user
+ */ 
+ function zendesk_get_user($uid) {
+  $query = "SELECT * FROM {zendesk_users} WHERE uid = %d";
+  $result = db_query($query, $uid);
+  if ($user = db_fetch_object($result)) {
+    return $user->zid;
+  } 
+  else {
+    return FALSE;
+  }  
+}
+
+/**
+ * Initialization of the zendesk library 
+ */ 
+function zendesk_initialize_library() {
+  require_once 'lib/Zendesk.lib.php';
+  $zd = new Zendesk(variable_get('zendesk_api_group', ''), variable_get('zendesk_api_mail', ''), variable_get('zendesk_api_pass', ''), FALSE);
+  return $zd;
+}
+
+/**
+ * Zendesk redirect
+ */
+function zendesk_redirect() {
+  drupal_goto(variable_get('zendesk_url', ''));
 }
