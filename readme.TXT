@@ -10,10 +10,15 @@ having to log in in both the drupal site and the zendesk support system.
 
 Installation is easy:
 - install the module
-- configure your zendesk account (go to 'account - Integration')
+- configure your zendesk account (go to 'Account - Security')
+  * Click "Enable Remote Authentication"
   * insert the remote authentication url: http://yoursite.com/services/zendesk
   * optionally you can insert your logout url: http://yoursite.com/logout    
 - go to admin/settings/zendesk and fill in the url of your zendesk support page (e.g. http://yourdomain.zendesk.com) together with the secret key
+
+Local Development
+=================
+Zendesk remote authentication does not require your site to be public.
 
 
 Zendesk PHP library
