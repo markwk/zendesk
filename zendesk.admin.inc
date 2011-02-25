@@ -1,5 +1,4 @@
 <?php
-// $id$
 /**
  * Zendesk configuration form
  */ 

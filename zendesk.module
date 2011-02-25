@@ -1,5 +1,4 @@
 <?php
-// $Id$ 
 /**
  * @file
  * The Zendesk module helps you to remote authenticate your users 
