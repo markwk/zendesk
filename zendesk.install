@@ -1,21 +1,8 @@
 <?php
 
 /**
- * Implementation of hook_install()
- */ 
-function zendesk_install() {
-  drupal_install_schema('zendesk');
-}
-
-/**
- * Implementation of hook_uninstall()
- */ 
-function zendesk_uninstall(){
-  drupal_uninstall_schema('zendesk');
-}
-/**
  * Implementation of hook_schema()
- */ 
+ */
 function zendesk_schema() {
   $schema['zendesk_users'] = array(
     'description' => t("Links the drupal user ids with the zendesk user id's"),
@@ -24,21 +11,35 @@ function zendesk_schema() {
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => 0,
-        'default' => 0, 
+        'default' => 0,
         'description' => t('Drupal user id'),
-        ),
+      ),
       'zid' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => 0,
-        'default' => 0, 
+        'default' => 0,
         'description' => t('Zendesk user id'),
-        ),
       ),
+    ),
     'primary_key' => array('uid', 'zid'),
     'indexes' => array(
       'uid' => array('uid')
-    ),  
+    ),
   );
- return $schema;
+  return $schema;
+}
+
+/**
+ * Implementation of hook_uninstall()
+ */
+function zendesk_uninstall() {
+  variable_del('zendesk_url');
+  variable_del('zendesk_secret_key');
+  variable_del('zendesk_api_enable');
+  variable_del('zendesk_api_group');
+  variable_del('zendesk_api_mail');
+  variable_del('zendesk_api_pass');
+  variable_del('zendesk_roles');
+  variable_del('zendesk_no_permission_page');
 }

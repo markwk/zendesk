@@ -1,4 +1,9 @@
-$Id: 
 name = Zendesk remote authentication
 description = "This module enables remote authentication with zendesk"
-core = 6.x
+package = Custom modules
+core = 7.x
+
+files[] = zendesk.module
+files[] = zendesk.install
+files[] = zendesk.admin.inc
+files[] = lib/Zendesk.lib.php

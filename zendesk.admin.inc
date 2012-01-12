@@ -60,7 +60,7 @@ function zendesk_configuration_form() {
     // Role-based visibility settings
   $result = db_query('SELECT rid, name FROM {role} WHERE rid != 1 ORDER BY name');
   $role_options = array();
-  while ($role = db_fetch_object($result)) {
+  foreach ($result as $role) {
     $role_options[$role->rid] = $role->name;
   }
   $form['zendesk']['zendesk_permissions'] = array(

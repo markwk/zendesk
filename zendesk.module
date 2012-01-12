@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * The Zendesk module helps you to remote authenticate your users 
@@ -6,7 +7,7 @@
  *
  * authors: 
  * Tom Deryckere (Tom.Deryckere@gmail.com)
- */ 
+ */
 
 /**
  * Implementation of hook_perm().
@@ -14,26 +15,27 @@
 function zendesk_perm() {
   return array('configure zendesk');
 }
+
 /**
  * Implementation of hook_menu()
- */  
+ */
 function zendesk_menu() {
   // callback use by zendesk for remote authentication
   $items['services/zendesk'] = array(
     'title' => 'Zendesk remote authentication',
     'page callback' => 'zendesk_remote_authentication',
     'access callback' => TRUE,
-    'type' => MENU_CALLBACK_ITEM,
+    'type' => MENU_CALLBACK,
   );
 
   $items['zendesk/support'] = array(
     'title' => 'Zendesk redirection',
     'page callback' => 'zendesk_redirect',
     'access callback' => TRUE,
-    'type' => MENU_CALLBACK_ITEM,
+    'type' => MENU_CALLBACK,
   );
-  
-  $items['admin/settings/zendesk'] = array(
+
+  $items['admin/config/zendesk'] = array(
     'title' => 'Zendesk settings',
     'access arguments' => array('configure zendesk'),
     'page callback' => 'drupal_get_form',
@@ -47,41 +49,41 @@ function zendesk_menu() {
 
 /**
  * Remote authentication script (see: http://www.zendesk.com/api/remote_authentication)
- */ 
+ */
 function zendesk_remote_authentication() {
   global $user;
   // check if anonymous, if so redirect to login with destination the path where he comes from
-  if ( $user->uid) {
+  if ($user->uid) {
     //check if user role is allowed to be authenticated
     if (zendesk_user_has_access($user)) {
-      $destination = ''; 
-      if(!empty($_SESSION['zendesk_page'])) {
+      $destination = '';
+      if (!empty($_SESSION['zendesk_page'])) {
         $destination = $_SESSION['zendesk_page'];
         unset($session['zendesk_page']);
       }
       else {
         $destination = $_GET['return_to'];
-      } 
+      }
       zendesk_authenticate_user($destination);
-    } 
+    }
     else {
       drupal_goto(variable_get('zendesk_no_permission_page', ''));
     }
-  } 
+  }
   else {
     $_SESSION['zendesk_page'] = $_GET['return_to'];
     drupal_goto('user', 'destination=services/zendesk');
-  } 
+  }
 }
 
 /**
  * Authentication of the user after the user is logged in
- */ 
+ */
 function zendesk_authenticate_user($destination = '') {
   global $user;
   $url = '';
-  $timestamp =  empty($_GET['timestamp']) ? time() : $_GET['timestamp'];
-  
+  $timestamp = empty($_GET['timestamp']) ? time() : $_GET['timestamp'];
+
   $hash = MD5($user->name . $user->mail . $user->uid . variable_get('zendesk_secret_key', '') . $timestamp);
   // Build query string
   $query = array(
@@ -92,17 +94,18 @@ function zendesk_authenticate_user($destination = '') {
     'external_id' => $user->uid,
     'return_to' => $destination,
   );
-  drupal_goto(variable_get('zendesk_url', '') . '/access/remote', drupal_query_string_encode($query));
+  drupal_goto(variable_get('zendesk_url', '') . '/access/remote', drupal_http_build_query($query));
 }
 
-/***
+/* * *
  * Check if the user may be be authenticated or synced with zendesk
- */ 
+ */
+
 function zendesk_user_has_access($user) {
   $zendesk_roles = variable_get('zendesk_roles', array());
   if (!array_sum($zendesk_roles)) { // no roles are set, give access
     return TRUE;
-  } 
+  }
   else {
     $keys = array_keys($user->roles);
     foreach ($keys as $key) {
@@ -119,24 +122,28 @@ function zendesk_user_has_access($user) {
  *  Adding a user
  *  Removing a user
  *  Deleting a users
- */  
+ */
 function zendesk_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'insert':
-        $zd = zendesk_initialize_library();
-        $result = $zd->create(ZENDESK_USERS, array(
+      $zd = zendesk_initialize_library();
+      $result = $zd->create(ZENDESK_USERS, array(
         'details' => array(
-            'email' => $account->mail,
-            'name' => $account->name,
-            'external-id' => $account->uid,
-          ), 
-      ));
+          'email' => $account->mail,
+          'name' => $account->name,
+          'external-id' => $account->uid,
+        ),
+        ));
       if (!$result) {
         watchdog('zendesk', 'error code: ' . $zd->result['code'], WATCHDOG_ERROR);
       }
       else {
-        $query = "INSERT INTO {zendesk_users} (uid, zid) VALUES (%d, %d)";
-        db_query($query, $account->uid, $result);
+        db_insert('zendesk_users')
+          ->fields(array(
+            'uid' => $account->uid,
+            'zid' => $result,
+          ))
+          ->execute();
       }
       break;
     case 'update':
@@ -145,26 +152,25 @@ function zendesk_user($op, &$edit, &$account, $category = NULL) {
       $result = $zd->update(ZENDESK_USERS, array(
         'id' => $zendesk_id,
         'details' => array(
-              'email' => $account->mail,
-              'name' => $account->name,
-              'external-id' => $account->uid,
-            ),
-          )
-        );
-      if (!result){
+          'email' => $account->mail,
+          'name' => $account->name,
+          'external-id' => $account->uid,
+        ),
+        )
+      );
+      if (!$result) {
         watchdog('zendesk', 'error: ' . $zd->result['code'], WATCHDOG_ERROR);
-      } 
+      }
       break;
     case 'delete':
       $zd = zendesk_initialize_library();
       $zendesk_id = zendesk_get_user($account->uid);
       $result = $zd->delete(ZENDESK_USERS, array('id' => $zendesk_id));
-      if (!result){
+      if (!result) {
         watchdog('zendesk', 'error: ' . $zd->result['code'], WATCHDOG_ERROR);
-      } 
+      }
       else {
-        $query = "DELETE FROM {zendesk_users} WHERE uid = %d";
-        db_query($query, $account->uid);
+        db_delete('zendesk_users')->condition('uid', $account->uid, '=')->execute();
       }
       break;
   }
@@ -172,23 +178,26 @@ function zendesk_user($op, &$edit, &$account, $category = NULL) {
 
 /**
  * Helper function to retrieve zendesk id of the user
- */ 
- function zendesk_get_user($uid) {
-  $query = "SELECT * FROM {zendesk_users} WHERE uid = %d";
-  $result = db_query($query, $uid);
-  if ($user = db_fetch_object($result)) {
-    return $user->zid;
-  } 
+ */
+function zendesk_get_user($uid) {
+  $query = db_select('zendesk_users', 'zu')
+      ->fields('zu', array('uid', 'zid'))->condition('zu.uid', $uid, '=');
+  $result = $query->execute();
+  if ($result->rowCount() <> 0) {
+    foreach ($result as $user) {
+      return $user->zid;
+    }
+  }
   else {
     return FALSE;
-  }  
+  }
 }
 
 /**
  * Initialization of the zendesk library 
- */ 
+ */
 function zendesk_initialize_library() {
-  require_once 'lib/Zendesk.lib.php';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'zendesk') . "/lib/Zendesk.lib.php";
   $zd = new Zendesk(variable_get('zendesk_api_group', ''), variable_get('zendesk_api_mail', ''), variable_get('zendesk_api_pass', ''), FALSE);
   return $zd;
 }
