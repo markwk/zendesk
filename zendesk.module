@@ -59,7 +59,7 @@ function zendesk_remote_authentication() {
       $destination = '';
       if (!empty($_SESSION['zendesk_page'])) {
         $destination = $_SESSION['zendesk_page'];
-        unset($session['zendesk_page']);
+        unset($_SESSION['zendesk_page']);
       }
       else {
         $destination = $_GET['return_to'];
@@ -72,7 +72,8 @@ function zendesk_remote_authentication() {
   }
   else {
     $_SESSION['zendesk_page'] = $_GET['return_to'];
-    drupal_goto('user', 'destination=services/zendesk');
+
+    drupal_goto('user', array('query' => array('destination' => 'services/zendesk')));
   }
 }
 
@@ -85,16 +86,19 @@ function zendesk_authenticate_user($destination = '') {
   $timestamp = empty($_GET['timestamp']) ? time() : $_GET['timestamp'];
 
   $hash = MD5($user->name . $user->mail . $user->uid . variable_get('zendesk_secret_key', '') . $timestamp);
-  // Build query string
-  $query = array(
-    'name' => $user->name,
-    'email' => $user->mail,
-    'timestamp' => $timestamp,
-    'hash' => $hash,
-    'external_id' => $user->uid,
-    'return_to' => $destination,
+  drupal_goto(
+    variable_get('zendesk_url', '') . '/access/remote', array(
+    'query' =>
+    array(
+      'name' => $user->name,
+      'email' => $user->mail,
+      'timestamp' => $timestamp,
+      'hash' => $hash,
+      'external_id' => $user->uid,
+      'return_to' => $destination,
+    )
+    )
   );
-  drupal_goto(variable_get('zendesk_url', '') . '/access/remote', drupal_http_build_query($query));
 }
 
 /* * *
