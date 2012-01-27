@@ -24,3 +24,7 @@ Zendesk PHP library
 ===================
 This module depends on the Zendesk PHP library. For ease of use, this library is included with the module in the lib directory.
 For more information on this library, please visit: http://code.google.com/p/zendesk-php-lib
+
+=================
+Originally developed for 6.x by twom <http://drupal.org/user/25564>
+Ported to Drupal 7.x by markwk <http://drupal.org/user/1094790>
