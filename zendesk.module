@@ -7,6 +7,7 @@
  *
  * authors: 
  * Tom Deryckere (Tom.Deryckere@gmail.com)
+ * Mark Koester (https://github.com/markwk/zendesk)
  */
 
 /**
@@ -35,13 +36,13 @@ function zendesk_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/config/zendesk'] = array(
+  $items['admin/config/people/zendesk'] = array(
     'title' => 'Zendesk settings',
     'access arguments' => array('configure zendesk'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('zendesk_configuration_form'),
     'type' => MENU_NORMAL_ITEM,
-    'description' => t('Zendesk settings'),
+    'description' => t('Configure Drupal settings to communicate with Zendesk'),
     'file' => 'zendesk.admin.inc',
   );
   return $items;
