@@ -13,7 +13,7 @@ Installation is easy:
   * Click "Enable Remote Authentication"
   * insert the remote authentication url: http://yoursite.com/services/zendesk
   * optionally you can insert your logout url: http://yoursite.com/logout    
-- go to admin/settings/zendesk and fill in the url of your zendesk support page (e.g. http://yourdomain.zendesk.com) together with the secret key
+- go to admin/config/people/zendesk and fill in the url of your zendesk support page (e.g. http://yourdomain.zendesk.com) together with the secret key
 
 Local Development
 =================
