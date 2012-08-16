@@ -11,14 +11,19 @@
  */
 
 /**
- * Implementation of hook_perm().
+ * Implements hook_permission().
  */
-function zendesk_perm() {
-  return array('configure zendesk');
+function zendesk_permission() {
+  return array(
+    'configure zendesk' => array(
+      'title' => t('Configure Zendesk'), 
+      'description' => t('Configure Drupal settings to communicate with Zendesk.'),
+    ),
+  );
 }
 
 /**
- * Implementation of hook_menu()
+ * Implements hook_menu().
  */
 function zendesk_menu() {
   // callback use by zendesk for remote authentication
