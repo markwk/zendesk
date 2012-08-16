@@ -176,7 +176,7 @@ function zendesk_user($op, &$edit, &$account, $category = NULL) {
       $zd = zendesk_initialize_library();
       $zendesk_id = zendesk_get_user($account->uid);
       $result = $zd->delete(ZENDESK_USERS, array('id' => $zendesk_id));
-      if (!result) {
+      if (!$result) {
         watchdog('zendesk', 'error: ' . $zd->result['code'], WATCHDOG_ERROR);
       }
       else {
